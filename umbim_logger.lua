@@ -25,24 +25,24 @@ local function extract_value(line)
 end
 
 -- Function to get the previous value from the log file
-local function get_previous_value(key, argument)
-  local cmd = "grep '" .. argument .. "|" .. key .. "' " .. log_file .. " 2>/dev/null | tail -n 1"
+local function get_previous_value(full_key)
+  local cmd = "grep '|" .. full_key .. "|" .. "' " .. log_file .. " 2>/dev/null | tail -n 1"
   local handle = io.popen(cmd)
   local output = handle:read("*a")
   handle:close()
   if output then
     local _, _, _, _, previous_value = string.find(output, "(.*)" .. separator .. "(.*)" .. separator .. "(.*)" .. separator .. "(.*)" .. separator .. "(.*)")
-    print("Previous value for " .. key .. " (" .. argument .. "): " .. tostring(previous_value)) -- Debug output
+    print("Previous value for " .. full_key .. ": " .. tostring(previous_value)) -- Debug output
     return previous_value
   end
-  print("Previous value for " .. key .. " (" .. argument .. "): nil") -- Debug output
+  print("Previous value for " .. full_key .. ": nil") -- Debug output
   return nil
 end
 
 -- Function to print and log the value
-local function print_and_log(argument, key, value, status)
+local function print_and_log(full_key, value, status)
   local timestamp = os.date("!%Y-%m-%dT%H:%M:%S%z")
-  local output = timestamp .. separator .. status .. separator .. argument .. separator .. key .. separator .. value
+  local output = timestamp .. separator .. status .. separator .. full_key .. separator .. value
   print(output) -- Print to stdout
   local file = io.open(log_file, "a")
   file:write(output .. "\n")
@@ -70,29 +70,29 @@ while true do
         local full_key = argument .. "." .. key .. "." .. index
 
         -- Check if key with this index already exists
-        while get_previous_value(full_key, argument) do
+        while get_previous_value(full_key) do
           index = index + 1
           full_key = argument .. "." .. key .. "." .. index
         end
 
-        local previous_value = get_previous_value(full_key, argument)
+        local previous_value = get_previous_value(full_key)
 
         -- Compare new and old values and store if not exist or changed
         if not previous_value then
           -- First run, print and log all values
           print("not previous_value")
-          print_and_log(argument, key, new_value, "initial")
+          print_and_log(full_key, new_value, "initial")
         elseif new_value ~= previous_value then
           -- Value changed, print and log the new value
           print("value diff: new '" .. new_value .. "' prev: '" .. previous_value .. "'")
-          print_and_log(argument, key, new_value, "changed")
+          print_and_log(full_key, new_value, "changed")
         else
           print("value no diff: new '" .. new_value .. "' prev: '" .. previous_value .. "'") -- Debug output for no change
         end
-
       end
     end
   end
+
   
   print("sleep")
   os.execute("sleep 60") -- Wait for 60 seconds
