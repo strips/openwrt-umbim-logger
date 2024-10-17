@@ -31,7 +31,7 @@ local function get_previous_value(key, argument)
   local output = handle:read("*a")
   handle:close()
   if output then
-    local _, _, _, previous_value = string.find(output, "(.*)" .. separator .. "(.*)" .. separator .. "(.*)" .. separator .. "(.*)")
+    local _, _, _, _, previous_value = string.find(output, "(.*)" .. separator .. "(.*)" .. separator .. "(.*)" .. separator .. "(.*)" .. separator .. "(.*)")
     print("Previous value for " .. key .. " (" .. argument .. "): " .. tostring(previous_value)) -- Debug output
     return previous_value
   end
@@ -64,7 +64,18 @@ while true do
       local key = extract_key(line)
       if key then
         local new_value = extract_value(line)
-        local previous_value = get_previous_value(key, argument)
+
+        -- Add index to key (start with 1)
+        local index = 1
+        local full_key = argument .. "." .. key .. "." .. index
+
+        -- Check if key with this index already exists
+        while get_previous_value(full_key, argument) do
+          index = index + 1
+          full_key = argument .. "." .. key .. "." .. index
+        end
+
+        local previous_value = get_previous_value(full_key, argument)
 
         -- Compare new and old values and store if not exist or changed
         if not previous_value then
@@ -82,7 +93,6 @@ while true do
       end
     end
   end
-
   
   print("sleep")
   os.execute("sleep 60") -- Wait for 60 seconds
