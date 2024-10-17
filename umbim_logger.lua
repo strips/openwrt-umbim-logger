@@ -4,26 +4,14 @@
 -- Configuration
 local command_arguments = {"caps", "home", "registration", "subscriber", "attach", "config", "radio"}
 local umbim_command = "umbim -t 6 -n -d /dev/cdc-wdm0"
-local log_file = "mbim_data_" .. os.date("%Y-%m-%d") .. ".log"
+local log_file = "mbim_data_" .. os.date("%Y-%m-%d") .. ".log" -- Changed log file name
 local separator = "|"
 
--- Function to extract key from a line
-local function extract_key(line)
-  for key in string.gmatch(line, "(%w+):") do
-    return key
-  end
-  return nil
-end
+-- ... (extract_key and extract_value functions remain the same)
 
--- Function to extract value from a line
-local function extract_value(line)
-  local _, _, value = string.find(line, ":(.*)")
-  return value and string.match(value, "%S.*") or nil
-end
-
--- Function to get the previous value from the log file
+-- Function to get the previous value from the log file (modified)
 local function get_previous_value(key, argument)
-  local cmd = "grep '" .. argument .. "|" .. key .. "' " .. log_file .. " | tail -n 1"
+  local cmd = "grep '" .. argument .. "|" .. key .. "' " .. log_file .. " 2>/dev/null | tail -n 1"
   local handle = io.popen(cmd)
   local output = handle:read("*a")
   handle:close()
@@ -32,6 +20,16 @@ local function get_previous_value(key, argument)
     return previous_value
   end
   return nil
+end
+
+-- Function to print and log the value
+local function print_and_log(argument, key, value, status)
+  local timestamp = os.date("!%Y-%m-%dT%H:%M:%S%z")
+  local output = timestamp .. separator .. status .. separator .. argument .. separator .. key .. separator .. value
+  print(output) -- Print to stdout
+  local file = io.open(log_file, "a")
+  file:write(output .. "\n")
+  file:close()
 end
 
 -- Main loop
@@ -48,12 +46,12 @@ while true do
         local new_value = extract_value(line)
         local previous_value = get_previous_value(key, argument)
 
-        if not previous_value or new_value ~= previous_value then
-          local timestamp = os.date("!%Y-%m-%dT%H:%M:%S%z")
-          local log_entry = timestamp .. separator .. argument .. separator .. key .. separator .. new_value
-          local file = io.open(log_file, "a")
-          file:write(log_entry .. "\n")
-          file:close()
+        if not previous_value then
+          -- First run, print and log all values
+          print_and_log(argument, key, new_value, "initial")
+        elseif new_value ~= previous_value then
+          -- Value changed, print and log the new value
+          print_and_log(argument, key, new_value, "changed")
         end
       end
     end
