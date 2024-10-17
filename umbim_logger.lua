@@ -51,6 +51,8 @@ end
 
 -- Main loop
 while true do
+  local current_values = {} -- Array to store current values
+
   -- Loop command_argument list for umbim command
   for _, argument in ipairs(command_arguments) do
     local cmd = umbim_command .. " " .. argument
@@ -65,35 +67,37 @@ while true do
       if key then
         local new_value = extract_value(line)
 
-        -- Add index to key (start with 1)
+        -- Create composite key with index
         local index = 1
         local full_key = argument .. "." .. key .. "." .. index
-
-        -- Check if key with this index already exists
-        while get_previous_value(full_key) do
+        while current_values[full_key] do
           index = index + 1
           full_key = argument .. "." .. key .. "." .. index
         end
 
-        local previous_value = get_previous_value(full_key)
-
-        -- Compare new and old values and store if not exist or changed
-        if not previous_value then
-          -- First run, print and log all values
-          print("not previous_value")
-          print_and_log(full_key, new_value, "initial")
-        elseif new_value ~= previous_value then
-          -- Value changed, print and log the new value
-          print("value diff: new '" .. new_value .. "' prev: '" .. previous_value .. "'")
-          print_and_log(full_key, new_value, "changed")
-        else
-          print("value no diff: new '" .. new_value .. "' prev: '" .. previous_value .. "'") -- Debug output for no change
-        end
+        -- Store the new value in the array
+        current_values[full_key] = new_value
       end
     end
   end
 
-  
+  -- Compare current_values with previous values in the log file
+  for full_key, new_value in pairs(current_values) do
+    local previous_value = get_previous_value(full_key)
+
+    if not previous_value then
+      -- First run, print and log all values
+      print("not previous_value")
+      print_and_log(full_key, new_value, "initial")
+    elseif new_value ~= previous_value then
+      -- Value changed, print and log the new value
+      print("value diff: new '" .. new_value .. "' prev: '" .. previous_value .. "'")
+      print_and_log(full_key, new_value, "changed")
+    else
+      print("value no diff: new '" .. new_value .. "' prev: '" .. previous_value .. "'") -- Debug output for no change
+    end
+  end
+
   print("sleep")
   os.execute("sleep 60") -- Wait for 60 seconds
 end
