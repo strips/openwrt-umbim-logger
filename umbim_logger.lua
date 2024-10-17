@@ -23,14 +23,14 @@ local function extract_value(line)
   return value and string.match(value, "%S.*") or nil
 end
 
--- Function to get the previous value from the log file (modified)
+-- Function to get the previous value from the log file (corrected)
 local function get_previous_value(key, argument)
   local cmd = "grep '" .. argument .. "|" .. key .. "' " .. log_file .. " 2>/dev/null | tail -n 1"
   local handle = io.popen(cmd)
   local output = handle:read("*a")
   handle:close()
   if output then
-    local _, _, previous_value = string.find(output, separator .. "(.*)")
+    local _, _, _, previous_value = string.find(output, "(.*)" .. separator .. "(.*)" .. separator .. "(.*)" .. separator .. "(.*)")
     return previous_value
   end
   return nil
