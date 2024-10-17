@@ -32,8 +32,10 @@ local function get_previous_value(key, argument)
   handle:close()
   if output then
     local _, _, _, previous_value = string.find(output, "(.*)" .. separator .. "(.*)" .. separator .. "(.*)" .. separator .. "(.*)")
+    print("Previous value for " .. key .. " (" .. argument .. "): " .. tostring(previous_value)) -- Debug output
     return previous_value
   end
+  print("Previous value for " .. key .. " (" .. argument .. "): nil") -- Debug output
   return nil
 end
 
@@ -67,14 +69,21 @@ while true do
         -- Compare new and old values and store if not exist or changed
         if not previous_value then
           -- First run, print and log all values
+          print("not previous_value")
           print_and_log(argument, key, new_value, "initial")
         elseif new_value ~= previous_value then
           -- Value changed, print and log the new value
+          print("value diff: new '" .. new_value .. "' prev: '" .. previous_value .. "'")
           print_and_log(argument, key, new_value, "changed")
+        else
+          print("value no diff: new '" .. new_value .. "' prev: '" .. previous_value .. "'") -- Debug output for no change
         end
+
       end
     end
   end
 
+  
+  print("sleep")
   os.execute("sleep 60") -- Wait for 60 seconds
 end
