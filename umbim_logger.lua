@@ -9,7 +9,19 @@ local umbim_command = "umbim -t 6 -n -d /dev/cdc-wdm0"
 local log_file = "mbim_data_" .. os.date("%Y-%m-%d") .. ".log" -- Changed log file name
 local separator = "|"
 
--- ... (extract_key and extract_value functions remain the same)
+-- Function to extract key from a line
+local function extract_key(line)
+  for key in string.gmatch(line, "(%w+):") do
+    return key
+  end
+  return nil
+end
+
+-- Function to extract value from a line
+local function extract_value(line)
+  local _, _, value = string.find(line, ":(.*)")
+  return value and string.match(value, "%S.*") or nil
+end
 
 -- Function to get the previous value from the log file (modified)
 local function get_previous_value(key, argument)
